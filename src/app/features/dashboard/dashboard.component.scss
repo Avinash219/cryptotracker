@@ -1,0 +1,21 @@
+.actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+.search-refresh-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  .search-field {
+    flex: 1; // Take available space
+  }
+
+  .refresh-button {
+    white-space: nowrap;
+  }
+}
+
