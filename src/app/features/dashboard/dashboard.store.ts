@@ -1,25 +1,29 @@
 import { inject, Injectable } from '@angular/core';
 import { ComponentStore } from '@ngrx/component-store';
 import { CryptoApiService } from '../../core/crypto-api.service';
-import { interval, startWith, switchMap, tap } from 'rxjs';
+import { interval, map, startWith, switchMap, tap, withLatestFrom } from 'rxjs';
+import { CurrencyStore } from '../currency-switcher-dropdown/Currency.Store';
 
 export interface DashboardState {
   coins: any[];
   loading: boolean;
   error: string | null;
+  selectedCurrency: string;
 }
 
 @Injectable()
 export class DashboardStore extends ComponentStore<DashboardState> {
   private api = inject(CryptoApiService);
+  private currencyStore = inject(CurrencyStore);
 
   constructor() {
     super({
       coins: [],
       loading: false,
       error: null,
+      selectedCurrency: 'usd',
     });
-    this.fetchTopCoins();
+    this.fetchCoins();
   }
 
   readonly coin$ = this.select((state) => state.coins);
@@ -43,24 +47,27 @@ export class DashboardStore extends ComponentStore<DashboardState> {
     loading: false,
   }));
 
-  readonly fetchTopCoins = this.effect<void>((trigger$) =>
-    trigger$.pipe(
-      startWith(0),
+  fetchCoins(currency?: string) {
+    this.fetchTopCoins(currency);
+  }
+  readonly fetchTopCoins = this.effect<string | undefined>((currency$) =>
+    currency$.pipe(
       tap({
         next: () => {
           this.setLoading(true), this.setCoins([]);
         },
       }),
-      switchMap(() =>
-        this.api.getTopCoins().pipe(
+      withLatestFrom(this.currencyStore.selectedCurrency$),
+      switchMap(([_, currency]) => {
+        return this.api.getTopCoins(currency).pipe(
           tap({
             next: (coins) => {
               this.setCoins(coins), this.setLoading(false);
             },
             error: () => this.setError('Unable to Load Coins'),
           })
-        )
-      )
+        );
+      })
     )
   );
 }

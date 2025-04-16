@@ -9,10 +9,10 @@ export class CryptoApiService {
   private http = inject(HttpClient);
   private baseUrl = 'https://api.coingecko.com/api/v3';
 
-  getTopCoins(): Observable<any> {
+  getTopCoins(currency = 'usd'): Observable<any> {
     return this.http.get(`${this.baseUrl}/coins/markets`, {
       params: {
-        vs_currency: 'usd',
+        vs_currency: currency,
         order: 'market_cap_desc',
         per_page: 10,
         page: 1,
@@ -52,7 +52,12 @@ export class CryptoApiService {
   }
 
   getCoinDetails(coinId: string): Observable<any> {
-    console.log('Coin id', coinId);
     return this.http.get(`${this.baseUrl}/coins/${coinId}`);
+  }
+
+  getCurrencyList(): Observable<string[]> {
+    return this.http.get<string[]>(
+      `${this.baseUrl}/simple/supported_vs_currencies`
+    );
   }
 }

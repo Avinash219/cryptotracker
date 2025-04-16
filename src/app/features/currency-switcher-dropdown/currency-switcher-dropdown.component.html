@@ -1,0 +1,10 @@
+@if (currencyList$ | async; as currencyList) {
+<mat-form-field>
+  <mat-label>Select Currency </mat-label>
+  <mat-select disableRipple [formControl]="selectedCurrency">
+    @for (currency of currencyList; track currency) {
+    <mat-option [value]="currency">{{currency | currencyName}}</mat-option>
+    }
+  </mat-select>
+</mat-form-field>
+}

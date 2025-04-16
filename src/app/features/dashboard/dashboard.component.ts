@@ -20,6 +20,8 @@ import { SearchStore } from '../search/search.store';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { CoinDetailDrawerComponent } from '../coin-detail-drawer/coin-detail-drawer.component';
+import { CurrencySwitcherDropdownComponent } from '../currency-switcher-dropdown/currency-switcher-dropdown.component';
+import { CurrencyStore } from '../currency-switcher-dropdown/Currency.Store';
 @Component({
   selector: 'app-dashboard',
   imports: [
@@ -32,6 +34,7 @@ import { CoinDetailDrawerComponent } from '../coin-detail-drawer/coin-detail-dra
     ReactiveFormsModule,
     MatButtonModule,
     MatIconModule,
+    CurrencySwitcherDropdownComponent,
   ],
   providers: [DashboardStore, SearchStore],
   templateUrl: './dashboard.component.html',
@@ -40,6 +43,7 @@ import { CoinDetailDrawerComponent } from '../coin-detail-drawer/coin-detail-dra
 export class DashboardComponent {
   store = inject(DashboardStore);
   searchStore = inject(SearchStore);
+  currencyStore = inject(CurrencyStore);
   searchControl = new FormControl('');
   @ViewChild('coinDetailDrawer', { read: ViewContainerRef })
   coinDetailDrawerRef!: ViewContainerRef;
@@ -54,6 +58,7 @@ export class DashboardComponent {
   );
   loading$ = this.store?.loading$;
   error$ = this.store?.error$;
+  selectedCurrency$ = this.currencyStore.selectedCurrency$;
 
   displayedColumns = ['image', 'name', 'price', 'change'];
 
@@ -69,13 +74,13 @@ export class DashboardComponent {
     ) {
       this.searchStore.searchEffect(of(this.searchControl.value));
     } else {
-      this.store?.fetchTopCoins();
+      this.store?.fetchCoins();
     }
   }
 
   onClear() {
     this.searchControl.setValue('');
-    this.store?.fetchTopCoins();
+    this.store?.fetchCoins();
   }
 
   searchWithParam() {
@@ -99,5 +104,9 @@ export class DashboardComponent {
     componentRef.instance.closed.subscribe(() => {
       this.coinDetailDrawerRef.clear();
     });
+  }
+
+  fetchCoinsCurrency(currency: string) {
+    this.store?.fetchCoins();
   }
 }
