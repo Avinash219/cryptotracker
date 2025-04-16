@@ -1,4 +1,11 @@
-import { Component, inject, Input } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  inject,
+  Input,
+  ViewChild,
+  ViewContainerRef,
+} from '@angular/core';
 import { filter, interval, of, startWith, switchMap } from 'rxjs';
 import { CryptoApiService } from '../../core/crypto-api.service';
 import { CommonModule } from '@angular/common';
@@ -12,6 +19,7 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { SearchStore } from '../search/search.store';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { CoinDetailDrawerComponent } from '../coin-detail-drawer/coin-detail-drawer.component';
 @Component({
   selector: 'app-dashboard',
   imports: [
@@ -30,24 +38,18 @@ import { MatIconModule } from '@angular/material/icon';
   styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent {
-  // store = inject(DashboardStore);
+  store = inject(DashboardStore);
   searchStore = inject(SearchStore);
   searchControl = new FormControl('');
-
-  @Input() store?: DashboardStore;
-
-  constructor() {
-    this.store ??= inject(DashboardStore); // fallback only if not passed via Storybook
-  }
+  @ViewChild('coinDetailDrawer', { read: ViewContainerRef })
+  coinDetailDrawerRef!: ViewContainerRef;
 
   coin$ = this.searchControl.valueChanges.pipe(
     startWith(''),
-    switchMap(
-      (searchTerm) =>
-        searchTerm?.trim().length && searchTerm?.trim().length > 3
-          ? this.searchStore.results$
-          : this.searchStore.results$
-      //    : if(this.store){this.store.coin$}
+    switchMap((searchTerm) =>
+      searchTerm?.trim().length && searchTerm?.trim().length > 3
+        ? this.searchStore.results$
+        : this.store.coin$
     )
   );
   loading$ = this.store?.loading$;
@@ -82,5 +84,20 @@ export class DashboardComponent {
         filter((value): value is string => value !== null)
       )
     );
+  }
+
+  cd = inject(ChangeDetectorRef);
+  fetchCoinDetails(rowDetail: any) {
+    if (this.coinDetailDrawerRef) {
+      this.coinDetailDrawerRef.clear();
+    }
+    const componentRef = this.coinDetailDrawerRef.createComponent(
+      CoinDetailDrawerComponent
+    );
+    componentRef.setInput('coinId', rowDetail.id);
+    console.log('Row Detail', rowDetail);
+    componentRef.instance.closed.subscribe(() => {
+      this.coinDetailDrawerRef.clear();
+    });
   }
 }

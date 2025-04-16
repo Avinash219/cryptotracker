@@ -50,4 +50,9 @@ export class CryptoApiService {
         )
       );
   }
+
+  getCoinDetails(coinId: string): Observable<any> {
+    console.log('Coin id', coinId);
+    return this.http.get(`${this.baseUrl}/coins/${coinId}`);
+  }
 }

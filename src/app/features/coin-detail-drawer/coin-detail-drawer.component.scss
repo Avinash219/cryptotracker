@@ -1,0 +1,26 @@
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.drawer-wrapper {
+  width: 400px;
+  height: 100vh;
+  background: #fff;
+  box-shadow: -4px 0 10px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer-content {
+  padding: 1rem;
+  color: #000;
+}

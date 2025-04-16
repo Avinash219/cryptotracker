@@ -1,0 +1,36 @@
+<div class="backdrop" (click)="onBackdropClick()">
+  <div class="drawer-wrapper" (click)="$event.stopPropagation()" [@slideInOut]="visibleState"
+    (@slideInOut.done)="onAnimationDone($event)" style="background: lightcoral">
+    <div class="drawer-content">
+      <ng-container *ngIf="(coinDetails$ | async) as coin; else loadingOrError">
+        <div class="coin-detail">
+          <h2>
+            <img [src]="coin.image.large" width="32" style="vertical-align: middle" />
+            {{ coin.name }} ({{ coin.symbol | uppercase }})
+          </h2>
+
+          <p><strong>Market Cap Rank:</strong> {{ coin.market_cap_rank }}</p>
+          <p><strong>Current Price:</strong> ${{ coin.market_data.current_price.usd }}</p>
+          <p><strong>High 24h:</strong> ${{ coin.market_data.high_24h.usd }}</p>
+          <p><strong>Low 24h:</strong> ${{ coin.market_data.low_24h.usd }}</p>
+
+          <p><strong>Homepage:</strong>
+            <a [href]="coin.links.homepage[0]" target="_blank">{{ coin.links.homepage[0] }}</a>
+          </p>
+
+          <p><strong>Description:</strong></p>
+          <div [innerHTML]="coin.description.en | slice:0:500"></div>
+        </div>
+      </ng-container>
+      <ng-template #loadingOrError>
+        <ng-container *ngIf="loading$(); else errorBlock">
+          <p style="color: gray;">Loading coin details...</p>
+        </ng-container>
+      </ng-template>
+
+      <ng-template #errorBlock>
+        <p style="color: red;">{{ error$() }}</p>
+      </ng-template>
+    </div>
+  </div>
+</div>
