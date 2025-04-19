@@ -1,6 +1,6 @@
 import { ComponentStore } from '@ngrx/component-store';
 import { CryptoApiService } from '../../core/crypto-api.service';
-import { catchError, of, switchMap, tap } from 'rxjs';
+import { catchError, EMPTY, switchMap, tap } from 'rxjs';
 import { Injectable } from '@angular/core';
 
 interface CurrencyState {
@@ -37,7 +37,7 @@ export class CurrencyStore extends ComponentStore<CurrencyState> {
           }),
           catchError((error: any) => {
             console.log('Unable to Fetch Currency List');
-            return of(null);
+            return EMPTY;
           })
         )
       )

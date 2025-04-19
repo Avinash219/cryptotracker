@@ -12,6 +12,7 @@ import {
   switchMap,
   take,
   tap,
+  withLatestFrom,
 } from 'rxjs';
 import { AsyncPipe, NgIf } from '@angular/common';
 import { FormBuilder, FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -36,29 +37,19 @@ export class CurrencySwitcherDropdownComponent {
   @Output() currencySelected = new EventEmitter<string>();
   currencyStore = inject(CurrencyStore);
   fb = inject(FormBuilder);
-  currencyList$: Observable<string[]> = this.cryptoApiService
-    .getCurrencyList()
-    .pipe(
-      tap((response: any) => console.log(response)),
-      catchError((error) => {
-        console.log(error);
-        return of([]);
-      })
-    );
+  currencyList$: Observable<string[]> =
+    this.currencyStore.supportedCurrencyList$;
   selectedCurrency = this.fb.control<string | null>(null);
 
   ngOnInit() {
     this.currencyStore.supportedCurrencyList$
       .pipe(
         filter((list) => list.length > 0),
+        withLatestFrom(this.currencyStore.selectedCurrency$),
         take(1),
-        tap(() => {
-          this.currencyStore.selectedCurrency$
-            .pipe(take(1))
-            .subscribe((cur) =>
-              this.selectedCurrency.setValue(cur, { emitEvent: false })
-            );
-        }),
+        tap(([_, cur]) =>
+          this.selectedCurrency.setValue(cur, { emitEvent: false })
+        ),
         switchMap(() =>
           this.selectedCurrency.valueChanges.pipe(
             startWith(this.selectedCurrency.value)
