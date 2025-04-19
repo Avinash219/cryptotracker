@@ -67,7 +67,6 @@ export class DashboardComponent {
   }
 
   refreshCoinDetails() {
-    console.log('Button clicked');
     if (
       this.searchControl?.value &&
       this.searchControl?.value?.trim().length > 3

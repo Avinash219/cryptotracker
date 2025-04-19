@@ -23,7 +23,6 @@ export class DashboardStore extends ComponentStore<DashboardState> {
       error: null,
       selectedCurrency: 'usd',
     });
-    this.fetchCoins();
   }
 
   readonly coin$ = this.select((state) => state.coins);

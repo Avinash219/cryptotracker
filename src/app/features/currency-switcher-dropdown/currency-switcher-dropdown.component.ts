@@ -3,9 +3,18 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatFormField } from '@angular/material/select';
 import { MatLabel } from '@angular/material/select';
 import { CryptoApiService } from '../../core/crypto-api.service';
-import { catchError, Observable, of, tap } from 'rxjs';
+import {
+  catchError,
+  filter,
+  Observable,
+  of,
+  startWith,
+  switchMap,
+  take,
+  tap,
+} from 'rxjs';
 import { AsyncPipe, NgIf } from '@angular/common';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormControl, ReactiveFormsModule } from '@angular/forms';
 import { CurrencyStore } from './Currency.Store';
 import { CurrencyNamePipe } from '../../shared/pipes/currency-name.pipe';
 
@@ -26,6 +35,7 @@ export class CurrencySwitcherDropdownComponent {
   cryptoApiService = inject(CryptoApiService);
   @Output() currencySelected = new EventEmitter<string>();
   currencyStore = inject(CurrencyStore);
+  fb = inject(FormBuilder);
   currencyList$: Observable<string[]> = this.cryptoApiService
     .getCurrencyList()
     .pipe(
@@ -35,12 +45,33 @@ export class CurrencySwitcherDropdownComponent {
         return of([]);
       })
     );
-  selectedCurrency = new FormControl('');
+  selectedCurrency = this.fb.control<string | null>(null);
 
   ngOnInit() {
-    this.selectedCurrency.valueChanges.subscribe((response: any) => {
-      this.currencyStore.setCurrency(response);
-      this.currencySelected.emit(response);
-    });
+    this.currencyStore.supportedCurrencyList$
+      .pipe(
+        filter((list) => list.length > 0),
+        take(1),
+        tap(() => {
+          this.currencyStore.selectedCurrency$
+            .pipe(take(1))
+            .subscribe((cur) =>
+              this.selectedCurrency.setValue(cur, { emitEvent: false })
+            );
+        }),
+        switchMap(() =>
+          this.selectedCurrency.valueChanges.pipe(
+            startWith(this.selectedCurrency.value)
+          )
+        )
+      )
+      .subscribe((response: any) => {
+        this.currencyStore.setCurrency(response);
+        this.currencySelected.emit(response);
+      });
+  }
+
+  trackByCurrency(_: number, currency: string) {
+    return currency;
   }
 }
