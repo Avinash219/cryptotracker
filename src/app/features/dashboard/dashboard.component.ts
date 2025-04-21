@@ -2,12 +2,10 @@ import {
   ChangeDetectorRef,
   Component,
   inject,
-  Input,
   ViewChild,
   ViewContainerRef,
 } from '@angular/core';
-import { filter, interval, of, startWith, switchMap } from 'rxjs';
-import { CryptoApiService } from '../../core/crypto-api.service';
+import { filter, of, startWith, switchMap, tap } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule } from '@angular/material/table';
@@ -22,6 +20,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { CoinDetailDrawerComponent } from '../coin-detail-drawer/coin-detail-drawer.component';
 import { CurrencySwitcherDropdownComponent } from '../currency-switcher-dropdown/currency-switcher-dropdown.component';
 import { CurrencyStore } from '../currency-switcher-dropdown/Currency.Store';
+import { PaginatorComponent } from '../../shared/paginator/paginator.component';
+import { PaginatorStore } from '../../shared/paginator/paginator.store';
+import { MatPaginator } from '@angular/material/paginator';
 @Component({
   selector: 'app-dashboard',
   imports: [
@@ -35,8 +36,9 @@ import { CurrencyStore } from '../currency-switcher-dropdown/Currency.Store';
     MatButtonModule,
     MatIconModule,
     CurrencySwitcherDropdownComponent,
+    PaginatorComponent,
   ],
-  providers: [DashboardStore, SearchStore],
+  providers: [DashboardStore, SearchStore, PaginatorStore],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
@@ -44,17 +46,25 @@ export class DashboardComponent {
   store = inject(DashboardStore);
   searchStore = inject(SearchStore);
   currencyStore = inject(CurrencyStore);
-  searchControl = new FormControl('');
+  searchControl = new FormControl<string | null>(null);
   @ViewChild('coinDetailDrawer', { read: ViewContainerRef })
   coinDetailDrawerRef!: ViewContainerRef;
+  paginatorStore = inject(PaginatorStore);
+  @ViewChild(PaginatorComponent) paginator!: PaginatorComponent;
 
   coin$ = this.searchControl.valueChanges.pipe(
-    startWith(''),
-    switchMap((searchTerm) =>
-      searchTerm?.trim().length && searchTerm?.trim().length > 3
+    startWith(null),
+    tap((value) => this.searchStore.setSearchTerm(value ?? '')),
+    switchMap((searchTerm) => {
+      this.paginatorStore.setPagination({
+        pageIndex: 1,
+        pageSize: 10,
+      });
+      this.paginator?.resetToFirstPage();
+      return searchTerm?.trim().length && searchTerm?.trim().length > 3
         ? this.searchStore.results$
-        : this.store.coin$
-    )
+        : this.store.coin$;
+    })
   );
   loading$ = this.store?.loading$;
   error$ = this.store?.error$;
@@ -75,11 +85,15 @@ export class DashboardComponent {
     } else {
       this.store?.fetchCoins();
     }
+    if (this.paginator) {
+      this.paginator?.resetToFirstPage();
+    }
   }
 
   onClear() {
-    this.searchControl.setValue('');
+    this.searchControl.setValue(null);
     this.store?.fetchCoins();
+    this.paginator?.resetToFirstPage();
   }
 
   searchWithParam() {
@@ -106,6 +120,11 @@ export class DashboardComponent {
   }
 
   fetchCoinsCurrency(currency: string) {
+    this.paginator.resetToFirstPage();
+    this.paginatorStore.setPagination({
+      pageIndex: 1,
+      pageSize: 10,
+    });
     this.store?.fetchCoins();
   }
 }

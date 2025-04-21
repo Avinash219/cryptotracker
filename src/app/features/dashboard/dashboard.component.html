@@ -18,6 +18,7 @@
       </button>
     </div>
     <app-currency-switcher-dropdown (currencySelected)="fetchCoinsCurrency($event)"></app-currency-switcher-dropdown>
+    <app-paginator #paginator></app-paginator>
   </div>
   <ng-container *ngIf="(coin$ | async) as coins">
     <table mat-table [dataSource]="coins" class="mat-elevation-z4">
