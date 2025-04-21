@@ -1,8 +1,10 @@
 import { inject, Injectable } from '@angular/core';
 import { ComponentStore } from '@ngrx/component-store';
 import { CryptoApiService } from '../../core/crypto-api.service';
-import { interval, map, startWith, switchMap, tap, withLatestFrom } from 'rxjs';
+import { concatMap, EMPTY, of, switchMap, tap, withLatestFrom } from 'rxjs';
 import { CurrencyStore } from '../currency-switcher-dropdown/Currency.Store';
+import { PaginatorStore } from '../../shared/paginator/paginator.store';
+import { SearchStore } from '../search/search.store';
 
 export interface DashboardState {
   coins: any[];
@@ -14,7 +16,9 @@ export interface DashboardState {
 @Injectable()
 export class DashboardStore extends ComponentStore<DashboardState> {
   private api = inject(CryptoApiService);
+  private paginationStore = inject(PaginatorStore);
   private currencyStore = inject(CurrencyStore);
+  private searchStore = inject(SearchStore);
 
   constructor() {
     super({
@@ -46,26 +50,50 @@ export class DashboardStore extends ComponentStore<DashboardState> {
     loading: false,
   }));
 
-  fetchCoins(currency?: string) {
-    this.fetchTopCoins(currency);
-  }
-  readonly fetchTopCoins = this.effect<string | undefined>((currency$) =>
-    currency$.pipe(
+  readonly fetchCoins = this.effect<void>((trigger$) =>
+    trigger$.pipe(
       tap({
         next: () => {
           this.setLoading(true), this.setCoins([]);
         },
       }),
-      withLatestFrom(this.currencyStore.selectedCurrency$),
-      switchMap(([_, currency]) => {
-        return this.api.getTopCoins(currency).pipe(
+      concatMap(() =>
+        this.api
+          .getAllCoinList()
+          .pipe(
+            tap((response) =>
+              this.paginationStore.setTotalRecords(response.length)
+            )
+          )
+      ),
+      withLatestFrom(
+        this.currencyStore.selectedCurrency$,
+        this.paginationStore.pagination$
+      ),
+      switchMap(([_, currency, paginationParams]) => {
+        return this.api.getTopCoins(currency, paginationParams).pipe(
           tap({
             next: (coins) => {
+              console.log(coins);
               this.setCoins(coins), this.setLoading(false);
             },
             error: () => this.setError('Unable to Load Coins'),
           })
         );
+      })
+    )
+  );
+
+  readonly refreshCoinsBasedOnSearchTerm = this.effect<void>((trigger$) =>
+    trigger$.pipe(
+      withLatestFrom(this.searchStore.searchTerm$),
+      switchMap(([_, searchTerm]) => {
+        if (searchTerm && searchTerm?.trim()?.length > 3) {
+          this.searchStore.searchEffect(of(searchTerm));
+          return EMPTY;
+        } else {
+          return of(null).pipe(tap(() => this.fetchCoins()));
+        }
       })
     )
   );

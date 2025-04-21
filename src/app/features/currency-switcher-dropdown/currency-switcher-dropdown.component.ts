@@ -5,6 +5,7 @@ import { MatLabel } from '@angular/material/select';
 import { CryptoApiService } from '../../core/crypto-api.service';
 import {
   catchError,
+  concatMap,
   filter,
   Observable,
   of,
@@ -18,6 +19,7 @@ import { AsyncPipe, NgIf } from '@angular/common';
 import { FormBuilder, FormControl, ReactiveFormsModule } from '@angular/forms';
 import { CurrencyStore } from './Currency.Store';
 import { CurrencyNamePipe } from '../../shared/pipes/currency-name.pipe';
+import { PaginatorStore } from '../../shared/paginator/paginator.store';
 
 @Component({
   selector: 'app-currency-switcher-dropdown',
@@ -40,6 +42,7 @@ export class CurrencySwitcherDropdownComponent {
   currencyList$: Observable<string[]> =
     this.currencyStore.supportedCurrencyList$;
   selectedCurrency = this.fb.control<string | null>(null);
+  paginatorStore = inject(PaginatorStore);
 
   ngOnInit() {
     this.currencyStore.supportedCurrencyList$
@@ -50,6 +53,15 @@ export class CurrencySwitcherDropdownComponent {
         tap(([_, cur]) =>
           this.selectedCurrency.setValue(cur, { emitEvent: false })
         ),
+        concatMap(() =>
+          this.cryptoApiService
+            .getAllCoinList()
+            .pipe(
+              tap((response) =>
+                this.paginatorStore.setTotalRecords(response.length)
+              )
+            )
+        ),
         switchMap(() =>
           this.selectedCurrency.valueChanges.pipe(
             startWith(this.selectedCurrency.value)
@@ -57,6 +69,7 @@ export class CurrencySwitcherDropdownComponent {
         )
       )
       .subscribe((response: any) => {
+        console.log(this.paginatorStore.totalRecords$);
         this.currencyStore.setCurrency(response);
         this.currencySelected.emit(response);
       });
